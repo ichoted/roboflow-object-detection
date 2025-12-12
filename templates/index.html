@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inference Web App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-900 text-white min-h-screen flex flex-col items-center justify-center p-6">
+
+    <div class="max-w-6xl w-full bg-gray-800 rounded-2xl shadow-2xl overflow-hidden">
+
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-[#D26D35] to-[#A10A0A] p-8 text-center">
+            <h1 class="text-4xl font-bold mb-2">Demo Object Detection</h1>
+            <p class="text-blue-100">Upload an image to detect, count, and visualize objects.</p>
+        </div>
+
+        <!-- Content -->
+        <div class="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+
+            <!-- Upload Section -->
+            <div class="space-y-6">
+                <h2 class="text-2xl font-semibold border-b border-gray-700 pb-2">Upload Image</h2>
+                <form action="/process" method="post" enctype="multipart/form-data" class="space-y-4">
+
+                    <div class="flex items-center justify-center w-full relative">
+                        <label for="dropzone-file"
+                            class="flex flex-col items-center justify-center w-full h-80 border-2 border-gray-600 border-dashed rounded-lg cursor-pointer hover:bg-gray-700 transition overflow-hidden bg-gray-700/30">
+
+                            <!-- Default State -->
+                            <div id="upload-prompt" class="flex flex-col items-center justify-center pt-5 pb-6">
+                                <svg class="w-10 h-10 mb-3 text-gray-400" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12">
+                                    </path>
+                                </svg>
+                                <p class="mb-2 text-sm text-gray-400"><span class="font-semibold">Click to upload</span>
+                                    or drag and drop</p>
+                                <p class="text-xs text-gray-500">SVG, PNG, JPG</p>
+                            </div>
+
+                            <!-- Image Preview -->
+                            <img id="image-preview" src="#" alt="Preview"
+                                class="hidden w-full h-full object-contain p-2" />
+
+                            <input id="dropzone-file" name="file" type="file" class="hidden" accept="image/*"
+                                required />
+                        </label>
+                    </div>
+
+                    <button type="submit"
+                        class="w-full text-white bg-gradient-to-r from-[#D26D35] to-[#A10A0A] hover:from-purple-600 hover:to-blue-600 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-3 text-center transition-all shadow-lg transform hover:scale-[1.02]">
+                        Analyze Image
+                    </button>
+                </form>
+            </div>
+
+            <!-- Result Section -->
+            <div class="space-y-6 h-full flex flex-col">
+                <h2 class="text-2xl font-semibold border-b border-gray-700 pb-2">Results</h2>
+                <div
+                    class="bg-gray-900 rounded-lg p-4 flex-grow overflow-auto border border-gray-700 font-mono text-sm h-96 relative">
+                    {% if image_b64 %}
+                    <div class="mb-4">
+                        <h3 class="text-green-400 mb-2 font-bold">Visualized Output:</h3>
+                        <img src="data:image/jpeg;base64,{{ image_b64 }}" class="w-full rounded-lg shadow-lg"
+                            alt="Result with bounding boxes">
+                    </div>
+                    {% endif %}
+
+                    {% if result %}
+                    <h3 class="text-blue-400 mb-2 font-bold">Raw JSON:</h3>
+                    <pre class="text-green-400 whitespace-pre-wrap text-xs">{{ result }}</pre>
+                    {% else %}
+                    <div
+                        class="flex flex-col items-center justify-center h-full text-gray-500 opacity-50 absolute inset-0">
+                        <svg class="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
+                            </path>
+                        </svg>
+                        <p>No results yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gray-900 p-4 text-center text-gray-600 text-xs border-t border-gray-800">
+            Powered by Inference SDK & FastAPI
+        </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div id="image-modal"
+        class="fixed inset-0 bg-black bg-opacity-90 hidden items-center justify-center z-50 p-4 cursor-pointer">
+        <div class="relative max-w-7xl max-h-screen">
+            <img id="modal-image" src="" alt="Full size" class="max-h-[90vh] object-contain rounded-lg shadow-2xl">
+            <button id="close-modal"
+                class="absolute -top-10 right-0 text-white hover:text-gray-300 text-xl font-bold p-2">
+                &times; Close
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('dropzone-file');
+        const previewImage = document.getElementById('image-preview');
+        const uploadPrompt = document.getElementById('upload-prompt');
+
+        // Modal elements
+        const modal = document.getElementById('image-modal');
+        const modalImg = document.getElementById('modal-image');
+        const closeModal = document.getElementById('close-modal');
+        const resultImage = document.querySelector('img[alt="Result with bounding boxes"]');
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    previewImage.src = e.target.result;
+                    previewImage.classList.remove('hidden');
+                    uploadPrompt.classList.add('hidden');
+                }
+                if (resultImage) {
+                    resultImage.style.cursor = 'zoom-in';
+
+                    const openModal = (e) => {
+                        if (e.type === 'contextmenu') e.preventDefault(); // Prevent default menu for right click
+                        modalImg.src = resultImage.src;
+                        modal.classList.remove('hidden');
+                        modal.classList.add('flex');
+                    };
+
+                    resultImage.addEventListener('click', openModal);
+                    resultImage.addEventListener('contextmenu', openModal);
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
+</body>
+
+</html>
