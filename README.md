@@ -5,7 +5,6 @@ Web Application สำหรับตรวจจับวัตถุ (Object D
 ## Requirements
 
 - Python 3.9+
-- Docker (สำหรับรัน Roboflow Inference Server)
 - [Roboflow Inference Server](https://github.com/roboflow/inference)
 
 ## Setup Project
@@ -31,7 +30,7 @@ Web Application สำหรับตรวจจับวัตถุ (Object D
 ```bash
 /Users/paphawara/Library/Python/3.9/bin/inference server start
 ```
-*Note: หากยังพบปัญหา สามารถลองใช้ `python3 -m inference server start` หรือตรวจสอบ Docker*
+*Note: หากยังพบปัญหา สามารถลองใช้ `python3 -m inference server start` *
 
 โปรเจกต์นี้ตั้งค่าให้เชื่อมต่อกับ `http://localhost:9001`
 
