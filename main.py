@@ -15,12 +15,9 @@ app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
 # Initialize client
-CLIENT_URL = "http://localhost:9001"
-API_KEY = "BycfIoAeYZfVFf5NFmsv"
-
 client = InferenceHTTPClient(
-    api_url=CLIENT_URL,
-    api_key=API_KEY
+    api_url="http://localhost:9001",
+    api_key="BycfIoAeYZfVFf5NFmsv"
 )
 
 def visualize_detections(image, result):
